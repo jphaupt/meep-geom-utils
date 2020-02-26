@@ -1,6 +1,6 @@
 """
-:Author JP Haupt
-:Date 17 February 2020
+:author JP Haupt
+:date 17 February 2020
 
 class definitions for Shape objects
 
@@ -15,6 +15,22 @@ limited.
 
 import meep as mp 
 
+
+class Plane(object):
+    """
+    a plane parametrised by a normal vector and a point in the plane, useful for
+    polyhedron shapes.
+    """
+    def __init__(self, normal, point):
+        self.n = normal
+        self.p = point
+    
+    def sameSide(self, point):
+        # TODO 
+        v = point - self.p 
+        proj = v.cdot(self.n)
+        return (proj > 0)
+
 class Shape(object):
     def __init__(self, material=mp.Medium()):
         self.material = material 
@@ -28,6 +44,11 @@ class Shape(object):
         
         :param point: point to check if inside Shape
         :type point: mp.Vector3
+
+        :returns: whether or not the point is inside the Shape
+        :type: bool
+
+        .. note:: points on the surface of the Shape is considered inside 
         """
         pass 
 
@@ -60,16 +81,56 @@ class Pyramid(Shape):
         :type b3: mp.Vector3
         :param b4: one of the vertices for the rectangular base of the pyramid
         :type b4: mp.Vector3
+
+        .. note:: currently, we require that the points on the base of the 
+                pyramid be given counterclockwise relative to outside (i.e. side
+                **without** the apex). 
+        
+        TODO remove this requirement (in the note above)
         """
-        # TODO initialise pyramid
-        print("stub")
+        # TODO implement such that we don't need to add them counterclockwise
+        self.planes = []
+        # make base normal (pointing outside), partner with arbitrary point 
+        base_normal = (b2-b1).cross(b3-b1)
+        self.planes.append(Plane(base_normal, b1))
+
+        # make triangular sides' normals, partner with (apex) point
+        # TODO carefully proofread with diagrams
+        # TODO ? normalise the normal vectors? not sure if matters
+        n1 = (apex-b1).cross(b2-b1)
+        # n1 /= n1.norm()
+        self.planes.append(Plane(n1, apex))
+        n2 = (apex-b2).cross(b3-b2)
+        # n2 /= n2.norm()
+        self.planes.append(Plane(n2, apex))
+        n3 = (apex-b3).cross(b4-b3)
+        # n3 /= n3.norm()
+        self.planes.append(Plane(n3, apex))
+        n4 = (apex-b4).cross(b1-b4)
+        # n4 /= n4.norm()
+        self.planes.append(Plane(n4, apex))
+
+        # do the rest, i.e. material
         super(Pyramid, self).__init__(**kwargs)
 
     # override the contains function 
     def contains(self, point):
-        print("stub")
-    print("stub")
-    # TODO stub
+        """
+        checks to see if the point is in the pyramid or not
+
+        this is achieved by taking the projection of the vector connecting a 
+        point on a given plane to the point in question onto the normal vector 
+        of that same plane. If all of these projections are nonpositive, then 
+        the point is inside the pyramid. If any one of them is positive, then it
+        is outside the pyramid.
+        
+        :param point: a point to be checked if inside or outside the pyramid
+        :type point: mp.Vector3
+        """
+        for plane in self.planes:
+            if plane.sameSide(point):
+                return False 
+        return True
     # TODO prioritise this one!
 
 class Cone(Shape):
