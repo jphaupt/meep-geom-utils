@@ -8,20 +8,22 @@ point
 """
 
 import meep as mp
-from src import shapes
+from meep_geom_utils.src import shapes 
 
-def geom2med(geometries, point, default_material=mp.Medium(epsilon=1.0)):
+def geom2med(geometries, default_material=mp.Medium(epsilon=1.0)):
     """
     takes a mixed list of mp.GeometricObject and Shape (defined in this module)
     and returns a function of mp.Vector3 that returns the medium at the point
     
     :param geometries: list of geometric objects/shapes
     :type geometries: [mp.GeometricObject or Shape]
-    :param point: point to be checked for medium
-    :type point: mp.Vector3
-    :default_material: the material to be chosen if point not in any of the objects
-                        Default is air (epsilon=1.0)
+    :default_material: the material to be chosen if point not in any of the 
+                       objects. Default is air (epsilon=1.0)
     :type default_material: mp.Medium
+
+    .. note:: objects at the end of the list are checked first (i.e. if two 
+            objects contain the point, then it is considered to be in the last 
+            one).
     """
     return lambda v: _geom2med_helper(geometries, v, default_material)
 
@@ -29,7 +31,7 @@ def _geom2med_helper(geometries, point, default_material):
     """
     Function that geom2med wraps around 
     """
-    for geom in geometries:
+    for geom in reversed(geometries):
         if isinstance(geom, mp.GeometricObject):
             if mp.is_point_in_object(point, geom):
                 return geom.material

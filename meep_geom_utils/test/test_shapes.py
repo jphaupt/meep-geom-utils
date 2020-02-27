@@ -11,7 +11,7 @@ note: must start name of test function with "test"
 """
 
 # import "../src/shapes"
-from src import shapes
+from ..src import shapes
 from meep import Vector3 as V # shorthand due to laziness
 
 def test_dummy():
